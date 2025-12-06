@@ -1,5 +1,5 @@
 import ollama
-import memoria_vectorial as memoria
+from . import memoria_vectorial as memoria
 
 MODELO = "llama3.2"
 

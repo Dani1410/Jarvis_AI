@@ -1,6 +1,9 @@
 import speech_recognition as sr
 import whisper
+# Al principio
 import os
+ruta_audio = os.path.join("datos", "temp_audio.wav") 
+# Usa 'ruta_audio' en lugar de "temp_audio.wav"
 
 # Cargamos el modelo una sola vez al importar este archivo
 print("Cargando sistema auditivo...")

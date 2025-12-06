@@ -3,7 +3,7 @@ import email
 import os  # <--- NUEVO
 from dotenv import load_dotenv  # <--- NUEVO
 from email.header import decode_header
-import voz
+from . import voz
 
 load_dotenv()
 

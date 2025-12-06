@@ -4,9 +4,9 @@ import time
 import threading
 import dateparser # El experto en fechas
 import datetime
-import voz
+from . import voz
 
-ARCHIVO_AGENDA = "agenda_jarvis.json"
+ARCHIVO_AGENDA = os.path.join("datos", "agenda_jarvis.json")
 
 # --- GESTIÓN DE DATOS ---
 def cargar_datos():

@@ -1,7 +1,7 @@
-import voz
-import oido
-import cerebro
-import acciones
+from modulos import voz
+from modulos import oido
+from modulos import cerebro
+from modulos import acciones
 import os  # <--- NUEVO
 from dotenv import load_dotenv  # <--- NUEVO
 

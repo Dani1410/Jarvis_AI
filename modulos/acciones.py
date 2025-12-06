@@ -6,11 +6,13 @@ import pywhatkit
 import datetime
 import psutil 
 import random
-import memoria_vectorial as memoria
-import voz 
-import social 
-import cerebro 
-import organizacion 
+from . import memoria_vectorial as memoria
+from . import voz 
+from . import social 
+from . import cerebro 
+from . import organizacion 
+from . import navegacion
+import pyperclip # Para leer el portapapeles
 
 CONTACTOS = {
     "dani": "+5243715364",
@@ -21,6 +23,38 @@ def ejecutar(texto):
     """
     Procesa el texto y ejecuta acciones. Retorna True si ejecutó algo, False si no.
     """
+    
+    # --- 1. NAVEGACIÓN WEB (NUEVO) ---
+    if "resume esta web" in texto or "lee esta página" in texto:
+        try:
+            # Lee la URL que tengas copiada en el portapapeles (Ctrl+C)
+            url = pyperclip.paste()
+            if "http" not in url:
+                voz.hablar("Primero copia una URL válida (Ctrl + C).")
+                return True
+            
+            contenido = navegacion.leer_pagina(url)
+            # Le pedimos a Ollama que resuma
+            resumen = cerebro.pensar(f"Resume este texto brevemente: {contenido}")
+            voz.hablar(resumen)
+        except Exception as e:
+            voz.hablar("Error leyendo el portapapeles.")
+        return True
+
+    if "publica en twitter" in texto or "tuitea" in texto:
+        tweet = texto.replace("publica en twitter", "").replace("tuitea", "").strip()
+        navegacion.publicar_twitter(tweet)
+        return True
+
+    if "descarga esto" in texto:
+        url = pyperclip.paste()
+        ext = url.split(".")[-1]
+        if len(ext) > 4: ext = "file"
+        nombre = f"descarga_jarvis.{ext}"
+        
+        resp = navegacion.descargar_archivo(url, nombre)
+        voz.hablar(resp)
+        return True
     
     # --- 1. MEMORIA Y APRENDIZAJE ---
     if "recuerda que" in texto or "guarda que" in texto:
