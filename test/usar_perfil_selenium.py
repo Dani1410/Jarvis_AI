@@ -57,27 +57,39 @@ def get_first_chat_name(driver, timeout=10):
 
 def get_first_unread_chat_name(driver, timeout=10):
     wait = WebDriverWait(driver, timeout)
+    # Esperamos a que aparezca la lista de chats
     grid = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='grid']")))
+    
+    # Obtenemos todas las filas (chats) visibles
     rows = grid.find_elements(By.CSS_SELECTOR, "div[role='row']")
+    
     for row in rows:
-        badge = row.find_elements(
-            By.CSS_SELECTOR,
-            (
-                "span[data-testid='icon-unread-count'], span[data-testid='unread-count'], "
-                "div[aria-label*='mensaje sin leer'], div[aria-label*='mensajes sin leer'], "
-                "span[aria-label*='mensaje sin leer'], span[aria-label*='mensajes sin leer']"
-            ),
-        )
-        if not badge:
-            continue
-        aria = row.get_attribute("aria-label") or ""
-        if aria:
-            return aria.split(",")[0].strip()
         try:
-            title = row.find_element(By.CSS_SELECTOR, "span[title]")
-            return title.get_attribute("title") or title.text
-        except Exception:
+            # --- CORRECCIÓN CLAVE ---
+            # Buscamos DENTRO de la fila (usando .//) cualquier elemento cuyo aria-label
+            # contenga la frase "no leí" (esto detecta "no leído" y "no leídos").
+            badge = row.find_elements(By.XPATH, ".//span[contains(@aria-label, 'no leí')]")
+            
+            # También buscamos por el icono visual del punto verde (por si acaso)
+            if not badge:
+                badge = row.find_elements(By.CSS_SELECTOR, "span[aria-label*='no leí']")
+
+            if badge:
+                # ¡ENCONTRADO! Este chat tiene mensajes pendientes.
+                # Ahora extraemos el nombre. El nombre siempre está en un span con atributo 'title'.
+                title_element = row.find_element(By.CSS_SELECTOR, "span[title]")
+                name = title_element.get_attribute("title")
+                
+                # Opcional: Imprimir para debug
+                # count = badge[0].get_attribute("aria-label")
+                # print(f"Detectado: {name} ({count})")
+                
+                return name
+                
+        except Exception as e:
+            # Si falla leer una fila específica, pasamos a la siguiente
             continue
+            
     return None
 
 def main():
