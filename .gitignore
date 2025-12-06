@@ -7,3 +7,4 @@ temp_audio.wav
 *.spec
 build/
 dist/
+.env

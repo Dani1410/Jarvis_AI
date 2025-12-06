@@ -8,6 +8,8 @@ import psutil # Para batería y hardware
 import random
 import memoria_vectorial as memoria
 import voz 
+import social # <--- NUEVO
+import cerebro # <--- NUEVO
 
 def ejecutar(texto):
     """
@@ -103,6 +105,17 @@ def ejecutar(texto):
             app_open(app, match_closest=True, throw_error=True)
         except:
             voz.hablar(f"No tengo instalada la app {app}")
+        return True
+    
+    # --- COMUNICACIÓN (NUEVO) ---
+    if "lee mis correos" in texto or "tengo mensajes" in texto or "revisar email" in texto:
+        social.leer_correos_gmail()
+        return True
+
+    # --- MEMORIA (NUEVO) ---
+    if "olvida la conversación" in texto or "reinicia el chat" in texto:
+        cerebro.historial_chat = [] # Borramos la lista
+        voz.hablar("Memoria a corto plazo borrada. Empezamos de cero.")
         return True
 
     # --- 7. APAGADO ---
