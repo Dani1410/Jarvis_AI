@@ -4,12 +4,13 @@ import screen_brightness_control as sbc
 from AppOpener import open as app_open
 import pywhatkit
 import datetime
-import psutil # Para batería y hardware
+import psutil 
 import random
 import memoria_vectorial as memoria
 import voz 
-import social # <--- NUEVO
-import cerebro # <--- NUEVO
+import social 
+import cerebro 
+import organizacion 
 
 CONTACTOS = {
     "dani": "+5243715364",
@@ -28,7 +29,7 @@ def ejecutar(texto):
         voz.hablar(f"Entendido, dato guardado.")
         return True
 
-    # --- 2. INFORMACIÓN DEL SISTEMA (Laptop) ---
+    # --- 2. INFORMACIÓN DEL SISTEMA ---
     if "batería" in texto or "carga" in texto:
         bateria = psutil.sensors_battery()
         porcentaje = bateria.percent
@@ -48,8 +49,6 @@ def ejecutar(texto):
         return True
         
     if "fecha" in texto or "qué día es" in texto:
-        # Formato simple. Para español completo se requiere librería locale, 
-        # pero esto funciona bien por defecto.
         fecha = datetime.datetime.now().strftime('%d/%m/%Y')
         voz.hablar(f"Hoy es {fecha}")
         return True
@@ -112,37 +111,28 @@ def ejecutar(texto):
             voz.hablar(f"No tengo instalada la app {app}")
         return True
     
-    # --- COMUNICACIÓN (NUEVO) ---
+    # --- COMUNICACIÓN ---
     if "lee mis correos" in texto or "tengo mensajes" in texto or "revisar email" in texto:
         social.leer_correos_gmail()
         return True
 
-    # --- WHATSAPP (NUEVO) ---
+    # --- WHATSAPP ---
     if "mensaje de whatsapp" in texto or "envía un whatsapp" in texto:
         try:
-            # Lógica para entender: "Envía un whatsapp a Mamá que diga ya voy a casa"
-            # 1. Limpiamos el comando base
             orden = texto.replace("envía un mensaje de whatsapp a", "").replace("envía un whatsapp a", "").strip()
             
-            # 2. Separamos el destinatario del mensaje usando la palabra "que diga"
             if "que diga" in orden:
                 partes = orden.split("que diga")
                 nombre_destino = partes[0].strip()
                 mensaje = partes[1].strip()
             else:
-                # Si no dijo "que diga", le preguntamos qué quiere enviar
                 voz.hablar("¿A quién se lo envío?")
-                # Aquí necesitaríamos una función input o escuchar de nuevo, 
-                # para simplificar asumiremos que lo dices todo de corrido o damos error.
-                voz.hablar("Por favor dime: Envía un whatsapp a [Nombre] que diga [Mensaje]")
-                return True
+                return True # Asumimos error por simplicidad
 
-            # 3. Buscamos el número
             numero = CONTACTOS.get(nombre_destino.lower())
 
             if numero:
                 voz.hablar(f"Enviando mensaje a {nombre_destino}: {mensaje}")
-                # wait_time=15 espera 15 segs a que cargue la web, tab_close=True cierra la pestaña después
                 pywhatkit.sendwhatmsg_instantly(numero, mensaje, wait_time=15, tab_close=True)
                 voz.hablar("Mensaje enviado.")
             else:
@@ -153,10 +143,65 @@ def ejecutar(texto):
             voz.hablar("Hubo un error al intentar enviar el mensaje.")
         
         return True
+    
+    # --- ORGANIZACIÓN Y TAREAS (AHORA SÍ ESTÁ AL NIVEL CORRECTO) ---
+    if "crea tarea" in texto or "agrega tarea" in texto:
+        tarea = texto.replace("crea tarea", "").replace("agrega tarea", "").strip()
+        resp = organizacion.agregar_tarea(tarea)
+        voz.hablar(resp)
+        return True
 
-    # --- MEMORIA (NUEVO) ---
+    if "evento" in texto or "reunión" in texto:
+        if " el " in texto: separator = " el "
+        elif " para " in texto: separator = " para "
+        else: 
+            voz.hablar("Dime la fecha usando 'el' o 'para'. Ejemplo: Reunión EL viernes.")
+            return True
+        
+        partes = texto.split(separator, 1) 
+        descripcion = partes[0].replace("agrega", "").replace("reunión", "").replace("evento", "").strip()
+        fecha = separator + partes[1]
+        
+        resp = organizacion.agregar_evento(descripcion, fecha)
+        voz.hablar(resp)
+        return True
+
+    if "qué tengo que hacer" in texto or "agenda" in texto or "pendientes" in texto:
+        resp = organizacion.ver_pendientes()
+        voz.hablar(resp)
+        return True
+
+    # --- RECORDATORIOS ---
+    if "recuérdame" in texto:
+        mensaje = ""
+        tiempo = ""
+        
+        if " cada " in texto:
+            partes = texto.split(" cada ", 1)
+            mensaje = partes[0].replace("recuérdame", "").strip()
+            tiempo = "cada " + partes[1]
+        elif " en " in texto:
+            partes = texto.split(" en ", 1)
+            mensaje = partes[0].replace("recuérdame", "").strip()
+            tiempo = "en " + partes[1]
+        else:
+            voz.hablar("Dime cuándo quieres el recordatorio. Ejemplo: 'en 5 minutos' o 'cada hora'.")
+            return True
+            
+        resp = organizacion.programar_recordatorio(mensaje, tiempo)
+        voz.hablar(resp)
+        return True
+        
+    # --- NOTAS RÁPIDAS ---
+    if "nota rápida" in texto or "anota esto" in texto:
+        nota = texto.replace("nota rápida", "").replace("anota esto", "").strip()
+        memoria.guardar(f"NOTA: {nota}")
+        voz.hablar("Nota guardada en memoria.")
+        return True
+
+    # --- MEMORIA ---
     if "olvida la conversación" in texto or "reinicia el chat" in texto:
-        cerebro.historial_chat = [] # Borramos la lista
+        cerebro.historial_chat = [] 
         voz.hablar("Memoria a corto plazo borrada. Empezamos de cero.")
         return True
 
