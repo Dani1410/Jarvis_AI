@@ -19,7 +19,9 @@ pip-wheel-metadata/
 # PyInstaller
 *.spec
 
+# Configuration files (pueden contener información sensible)
 .config.py
+config.py
 
 # Editor/IDE folders
 .vscode/
@@ -37,20 +39,24 @@ Thumbs.db
 secrets.json
 credentials.json
 
-# Logs
+# Logs (toda la carpeta de logs)
 logs/
 *.log
+*.log.*
 
 # Databases
 *.db
 *.sqlite
 *.sqlite3
+data/db/
+db/
 
 # Test / coverage
 .pytest_cache/
 .coverage
 coverage.xml
 htmlcov/
+test/
 
 # Caches
 .cache/
@@ -58,14 +64,50 @@ htmlcov/
 .hypothesis/
 
 # Temporary/media/test files
+temp/
 temp_audio.wav
-captura_969.png
+*.wav
+*.mp3
+captura_*.png
+screenshots/
 
 # Chrome / browser profiles created for testing
 chrome_profile_copies/
-# En tu caso: C:\temp\selenium_profile (si lo usas solo localmente) -> ignorar la carpeta donde guardes ese perfil
-# Ejemplo para una ruta local (sin incluir la raíz C:): temp_selenium_profile/
-# Ajusta al nombre que uses.
+profiles/
+*_profile/
+*selenium_profile*/
 
-# Misc
-*.log.*
+# Archivos temporales de Jarvis
+data/temp/
+downloads/
+Descargas_Jarvis/
+
+# Datos sensibles del proyecto
+data/agenda.json
+data/cerebro_vectorial/
+*.txt
+!requirements.txt
+!README.txt
+
+# Caché de Python
+*.pyc
+.Python
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Archivos de respaldo
+*.bak
+*.swp
+*.swo
+*~
+
+# Archivos de Windows
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+._*
