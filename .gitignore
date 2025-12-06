@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+cerebro_vectorial/
+venv/
+.vscode/
+temp_audio.wav
+*.spec
+build/
+dist/
