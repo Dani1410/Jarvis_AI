@@ -2,20 +2,34 @@ import voz
 import oido
 import cerebro
 import acciones
+import os  # <--- NUEVO
+from dotenv import load_dotenv  # <--- NUEVO
+
+load_dotenv()
+
+EMAIL_USUARIO = os.getenv('EMAIL_USUARIO')
+EMAIL_PASS = os.getenv('EMAIL_PASS')
 
 def main():
-    voz.hablar("Sistemas modulares en línea. Te escucho.")
+    print("--- MODO DEBUG (TEXTO) ACTIVADO ---")
+    print("Escribe tus comandos. (Escribe 'salir' para terminar)")
     
     while True:
-        # 1. Escuchar
-        texto = oido.escuchar()
+        # 1. ENTRADA: Usamos input() en lugar de oido.escuchar()
+        try:
+            texto = input("\n👉 TÚ: ").lower()
+        except KeyboardInterrupt:
+            break # Permite salir con Ctrl+C
+
         if not texto: continue
         
-        # 2. Verificar si es una acción (Música, Volumen, etc.)
+        if texto == "salir": break
+        
+        # 2. ACCIONES: Probamos si ejecuta comandos (Spotify, Volumen, etc.)
         if acciones.ejecutar(texto):
             continue
             
-        # 3. Si no es acción, pensar respuesta
+        # 3. PENSAMIENTO: Si no es comando, preguntamos a Ollama
         respuesta = cerebro.pensar(texto)
         voz.hablar(respuesta)
 

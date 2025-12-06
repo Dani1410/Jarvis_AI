@@ -7,15 +7,12 @@ import voz
 
 load_dotenv()
 
-# --- CONFIGURACIÓN GMAIL ---
 EMAIL_USUARIO = os.getenv('EMAIL_USUARIO')
 EMAIL_PASS = os.getenv('EMAIL_PASS')
 
 def leer_correos_gmail():
     try:
         
-        print("Correo:", EMAIL_USUARIO)
-        print("Clave:", EMAIL_PASS)
         voz.hablar("Conectando con los servidores de Google...")
         
         # Conexión SSL al servidor IMAP de Gmail

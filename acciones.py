@@ -11,6 +11,11 @@ import voz
 import social # <--- NUEVO
 import cerebro # <--- NUEVO
 
+CONTACTOS = {
+    "dani": "+5243715364",
+    "keni": "+525611263777"
+}
+
 def ejecutar(texto):
     """
     Procesa el texto y ejecuta acciones. Retorna True si ejecutó algo, False si no.
@@ -110,6 +115,43 @@ def ejecutar(texto):
     # --- COMUNICACIÓN (NUEVO) ---
     if "lee mis correos" in texto or "tengo mensajes" in texto or "revisar email" in texto:
         social.leer_correos_gmail()
+        return True
+
+    # --- WHATSAPP (NUEVO) ---
+    if "mensaje de whatsapp" in texto or "envía un whatsapp" in texto:
+        try:
+            # Lógica para entender: "Envía un whatsapp a Mamá que diga ya voy a casa"
+            # 1. Limpiamos el comando base
+            orden = texto.replace("envía un mensaje de whatsapp a", "").replace("envía un whatsapp a", "").strip()
+            
+            # 2. Separamos el destinatario del mensaje usando la palabra "que diga"
+            if "que diga" in orden:
+                partes = orden.split("que diga")
+                nombre_destino = partes[0].strip()
+                mensaje = partes[1].strip()
+            else:
+                # Si no dijo "que diga", le preguntamos qué quiere enviar
+                voz.hablar("¿A quién se lo envío?")
+                # Aquí necesitaríamos una función input o escuchar de nuevo, 
+                # para simplificar asumiremos que lo dices todo de corrido o damos error.
+                voz.hablar("Por favor dime: Envía un whatsapp a [Nombre] que diga [Mensaje]")
+                return True
+
+            # 3. Buscamos el número
+            numero = CONTACTOS.get(nombre_destino.lower())
+
+            if numero:
+                voz.hablar(f"Enviando mensaje a {nombre_destino}: {mensaje}")
+                # wait_time=15 espera 15 segs a que cargue la web, tab_close=True cierra la pestaña después
+                pywhatkit.sendwhatmsg_instantly(numero, mensaje, wait_time=15, tab_close=True)
+                voz.hablar("Mensaje enviado.")
+            else:
+                voz.hablar(f"No tengo el número de {nombre_destino} en mi agenda.")
+            
+        except Exception as e:
+            print(e)
+            voz.hablar("Hubo un error al intentar enviar el mensaje.")
+        
         return True
 
     # --- MEMORIA (NUEVO) ---
