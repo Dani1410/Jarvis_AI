@@ -2,16 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Script interactivo para usar WhatsApp Web con Selenium + perfil de Chrome.
-Versión corregida para problemas donde el chat se "cerraba" justo después de abrirse
-y/o el input de mensajes no era detectable por send_message (StaleElement / re-render).
-Cambios principales:
- - Evitar enviar ESCAPE automáticamente al input de búsqueda (esto puede interferir
-   en algunas versiones/idiomas de WhatsApp Web y provocar cierre del panel).
- - Esperas más robustas tras hacer click en la fila del chat (esperar a que el panel
-   o el footer-input estén presentes y estables).
- - Manejo de StaleElementReferenceException en send_message: re-localizar el input
-   si el elemento se volvió stale durante re-render.
- - Mejor manejo de clicks (ElementClickInterceptedException).
+Integración con funcionalidades avanzadas (historial, descarga de notas de voz).
+Se espera que exista el archivo test/whatsapp_features.py (módulo con read_last_messages,
+download_voice_from_message y convert_ogg_to_wav). También se intenta cargar un módulo
+local test/oido.py con la función transcribe(wav_path) si quieres pasar el WAV a
+tu pipeline de speech-to-text.
+
+Dependencias recomendadas:
+ - selenium, webdriver-manager
+ - pydub (para conversión ogg->wav) y ffmpeg en PATH si quieres transcribir audio
 """
 from pathlib import Path
 from selenium import webdriver
@@ -30,12 +29,14 @@ from selenium.common.exceptions import (
     NoSuchElementException,
 )
 from typing import Optional
+import importlib.util
 import time
 import sys
 import os
 import re
 import logging
 from dotenv import load_dotenv
+from selenium.webdriver.chrome.options import Options
 
 # Config logging
 logging.basicConfig(
@@ -54,6 +55,27 @@ if not profile_str:
 PROFILE_DIR = Path(profile_str)
 
 
+# ---------------- Helper: cargar módulos locales por path (importlib) ---------------- #
+def load_module_from_path(name: str, path: Path):
+    """Carga dinámicamente un módulo Python desde un archivo si existe."""
+    if not path.exists():
+        logging.debug(f"Module path {path} does not exist.")
+        return None
+    spec = importlib.util.spec_from_file_location(name, str(path))
+    if spec is None:
+        logging.warning(f"No se pudo crear spec para {path}")
+        return None
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)  # type: ignore
+        logging.info(f"Modulo cargado: {name} desde {path}")
+        return mod
+    except Exception as e:
+        logging.exception(f"Fallo cargando módulo {path}: {e}")
+        return None
+
+
+# ---------------------- Resto de tus funciones (detección / apertura / envío) ---------------------- #
 def ensure_profile_dir(path: Path):
     if not path.exists():
         path.mkdir(parents=True, exist_ok=True)
@@ -62,7 +84,7 @@ def ensure_profile_dir(path: Path):
         logging.info(f"Usando directorio de perfil existente: {path}")
 
 
-def create_driver(profile_path: Path, headless=False) -> webdriver.Chrome:
+def create_driver(profile_path: Path, headless=False, download_dir: Optional[str] = None):
     opciones = Options()
     opciones.add_argument(f"--user-data-dir={profile_path}")
     opciones.add_argument("--no-first-run")
@@ -71,14 +93,24 @@ def create_driver(profile_path: Path, headless=False) -> webdriver.Chrome:
     opciones.add_argument("--disable-popup-blocking")
     opciones.add_experimental_option("excludeSwitches", ["enable-automation"])
     opciones.add_experimental_option("detach", True)
+    
     if headless:
         opciones.add_argument("--headless=new")
         opciones.add_argument("--disable-gpu")
+    
+    if download_dir:
+        prefs = {
+            "download.default_directory": str(download_dir),
+            "download.prompt_for_download": False,
+            "download.directory_upgrade": True,
+            "safebrowsing.enabled": True,
+            "profile.default_content_settings.popups": 0
+        }
+        opciones.add_experimental_option("prefs", prefs)
+    
     service = Service(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=opciones)
 
-
-# ---------------------- Funciones WhatsApp (detección / apertura / envío) ---------------------- #
 
 def wait_for_chat_grid(driver, timeout=30):
     wait = WebDriverWait(driver, timeout)
@@ -508,8 +540,16 @@ def send_message(driver, panel_or_footer: Optional[WebElement], text: str, press
         return False
 
 
-# ---------------------- Interfaz interactiva ---------------------- #
+# ---------------------- Integración con whatsapp_features ---------------------- #
+# Carga dinámica de whatsapp_features.py y oido.py si están en la carpeta test/
+WF_MODULE = load_module_from_path("whatsapp_features", ROOT / "whatsapp_features.py")
+OIDO_MODULE = load_module_from_path("oido", ROOT / "oido.py")  # optional; si no existe, se usará solo guardar archivos
 
+# Mantener IDs procesados en memoria (evita volver a procesar la misma nota varias veces durante la sesión)
+processed_message_ids = set()
+
+
+# ---------------------- Interfaz interactiva (con opciones de historial / audio) ---------------------- #
 def prompt_multiline_message() -> str:
     print("Escribe el mensaje. Para terminar, deja una línea vacía y presiona ENTER:")
     lines = []
@@ -533,8 +573,10 @@ def interactive_menu(driver: webdriver.Chrome):
         print("3) Buscar y abrir chat por NOMBRE")
         print("4) Buscar y abrir chat por NÚMERO")
         print("5) Enviar mensaje (a nombre o número; podrás tipear el mensaje)")
+        print("7) Leer últimos N mensajes del chat abierto (historial)")
+        print("8) Descargar y transcribir última nota de voz (si existe)")
         print("6) Salir")
-        choice = input("Elige una opción (1-6): ").strip()
+        choice = input("Elige una opción (1-8): ").strip()
         if choice == "1":
             print("Abriendo https://web.whatsapp.com/ ...")
             driver.get("https://web.whatsapp.com/")
@@ -604,6 +646,82 @@ def interactive_menu(driver: webdriver.Chrome):
                 continue
             ok = send_message(driver, panel, message, press_enter=True)
             print("Resultado envío:", "OK" if ok else "FALLÓ")
+        elif choice == "7":
+            # Leer últimos N mensajes del chat actualmente abierto (contexto/RAG)
+            if not whatsapp_open:
+                print("Primero abre WhatsApp Web (opción 1).")
+                continue
+            if WF_MODULE is None:
+                print("No está disponible whatsapp_features.py. Cópialo en test/whatsapp_features.py")
+                continue
+            try:
+                n = input("¿Cuántos mensajes quieres leer? (por defecto 10): ").strip()
+                n = int(n) if n else 10
+                msgs = WF_MODULE.read_last_messages(driver, n=n)
+                if not msgs:
+                    print("No se encontraron mensajes o no está cargado el panel de conversación.")
+                else:
+                    print(f"Últimos {len(msgs)} mensajes (más recientes primero):")
+                    for m in msgs:
+                        print("----")
+                        print("id:", m.get("id"))
+                        print("ts:", m.get("timestamp"))
+                        print("from:", m.get("sender"))
+                        print("dir:", m.get("direction"))
+                        print("type:", m.get("type"))
+                        print("text:", m.get("text"))
+            except Exception as e:
+                logging.exception("Error leyendo historial:")
+                print("Error:", e)
+        elif choice == "8":
+            # Descargar y transcribir última nota de voz entrante (si existe)
+            if not whatsapp_open:
+                print("Primero abre WhatsApp Web (opción 1).")
+                continue
+            if WF_MODULE is None:
+                print("No está disponible whatsapp_features.py. Cópialo en test/whatsapp_features.py")
+                continue
+            try:
+                msgs = WF_MODULE.read_last_messages(driver, n=20)
+                # buscar la primera nota de voz entrante no procesada
+                audio_msg = None
+                for m in msgs:
+                    if m.get("type") == "audio":
+                        mid = m.get("id")
+                        if mid and mid in processed_message_ids:
+                            continue
+                        audio_msg = m
+                        break
+                if not audio_msg:
+                    print("No se encontró ninguna nota de voz reciente.")
+                    continue
+                print("Nota de voz encontrada, descargando...")
+                ogg_path = WF_MODULE.download_voice_from_message(driver, audio_msg["element"])
+                if not ogg_path:
+                    print("No se pudo descargar la nota de voz (posible blob no accesible).")
+                    continue
+                print("Convertiendo a WAV...")
+                wav_path = WF_MODULE.convert_ogg_to_wav(ogg_path)
+                if not wav_path:
+                    print("Fallo en la conversión ogg->wav. Asegúrate de tener pydub y ffmpeg instalado.")
+                    continue
+                print("WAV generado en:", wav_path)
+                processed_message_ids.add(audio_msg.get("id"))
+                # si existe modulo oido.py, usarlo
+                if OIDO_MODULE:
+                    # se asume que OIDO_MODULE tiene una función transcribe(wav_path) -> str
+                    try:
+                        print("Transcribiendo (oido.transcribe)...")
+                        text = OIDO_MODULE.transcribe(wav_path)
+                        print("Transcripción:\n", text)
+                    except Exception as e:
+                        logging.exception("Error al transcribir con oido.py:")
+                        print("Falló la transcripción con oido.py:", e)
+                else:
+                    print("No se encontró oido.py; si quieres transcribir, crea test/oido.py con función transcribe(wav_path).")
+            except Exception as e:
+                logging.exception("Error descargando/transcribiendo nota de voz:")
+                print("Error:", e)
         elif choice == "6":
             confirm = input("¿Cerrar navegador y salir? (s/N): ").strip().lower()
             if confirm == "s" or confirm == "si":
@@ -623,7 +741,7 @@ def main():
         ensure_profile_dir(PROFILE_DIR)
         logging.info("Creando Chrome con perfil exclusivo para Selenium (se abrirá la ventana)...")
         driver = create_driver(PROFILE_DIR, headless=False)
-        # No navegamos aún: dejamos que el usuario elija la opción 1 para abrir WhatsApp Web.
+        # Cargamos módulos locales (si existen). Ya cargados en top-level WF_MODULE / OIDO_MODULE.
         interactive_menu(driver)
     except Exception as e:
         logging.exception("Ocurrió un error en la ejecución:")
@@ -637,10 +755,6 @@ def main():
                 except Exception:
                     print("No se pudo guardar screenshot.")
     finally:
-        # si el navegador aún está abierto y no se cerró en el menú, lo dejamos según preferencia:
-        # Puedes descomentar para forzar cierre:
-        # if driver:
-        #     driver.quit()
         pass
 
 

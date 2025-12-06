@@ -12,6 +12,17 @@ try:
 except:
     print("⚠️ Error cargando Whisper. Verifica que tengas internet la primera vez.")
 
+def transcribe(wav_path: str, language: str = "es") -> str:
+    """
+    Transcribe un WAV usando el modelo cargado.
+    Retorna el texto (string) o levanta excepción en caso de error.
+    """
+    if ear_model is None:
+        raise RuntimeError("Modelo de ASR no cargado en oido.py (ear_model es None).")
+    # whisper expects path; fp16 False to avoid GPU fp16 issues on CPU
+    result = ear_model.transcribe(wav_path, language=language, fp16=False)
+    return result.get("text", "").strip()
+
 def escuchar():
     r = sr.Recognizer()
     with sr.Microphone() as source:
