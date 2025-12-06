@@ -5,6 +5,7 @@ import whisper
 import os
 import warnings
 import memoria_vectorial as memoria  # Importamos tu archivo con alias
+import config
 from AppOpener import open as app_open
 
 # Configuración inicial
