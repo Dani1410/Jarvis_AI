@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 # Importaciones de CORE
 from core import voz, cerebro, oido
 
-# Importaciones de skills organizadas (Necesarias para ejecutar_accion)
+# Importaciones de skills organizadas
 from skills.productividad import (
     agregar_tarea, 
     ver_tareas, 
@@ -35,16 +35,14 @@ logging.basicConfig(
     encoding='utf-8'
 )
 
+logger = logging.getLogger(__name__)
+
 # -------------------------------------------------------------
-# FUNCIÓN DE LÓGICA PRINCIPAL (La unidad que será reutilizada)
+# FUNCIÓN DE LÓGICA PRINCIPAL
 # -------------------------------------------------------------
 
-# La función ejecutar_accion se queda aquí ya que usa todas las skills
 def ejecutar_accion(texto):
-    """
-    Procesa comandos específicos y retorna True si ejecutó algo.
-    (El contenido es el mismo que tenías en el main.py original)
-    """
+    """Procesa comandos específicos y retorna True si ejecutó algo."""
     
     # === PRODUCTIVIDAD ===
     if "agregar tarea" in texto or "nueva tarea" in texto:
@@ -96,7 +94,7 @@ def ejecutar_accion(texto):
                 mensaje, tiempo = partes.split(" cada ", 1)
                 tiempo = "cada " + tiempo
             else:
-                mensaje, tiempo = partes.split(" en " in partes) and partes.split(" en ", 1)
+                mensaje, tiempo = partes.split(" en ", 1)
                 tiempo = "en " + tiempo
             
             resultado = programar_recordatorio(mensaje.strip(), tiempo.strip())
@@ -145,66 +143,74 @@ def ejecutar_accion(texto):
     
     return False
 
-# La función run_jarvis_session ejecuta el bucle principal, usando las funciones
-# de I/O que le pasemos.
 def run_jarvis_session(get_input_fn, mode_name):
-    
-    # La función voz.hablar ya es global y la usaremos para output,
-    # el modo texto la habrá redefinido.
+    """Ejecuta el bucle principal de Jarvis."""
     
     print("\n" + "="*60)
     print("🤖 JARVIS AI - SISTEMA ACTIVADO")
     print("="*60)
     print(f"📝 MODO {mode_name} ACTIVADO")
-    print("Comandos disponibles: (muestra solo el inicio del menú para no duplicar)")
+    print("Comandos disponibles:")
     print("  • Agregar tarea [descripción]")
+    print("  • Ver tareas")
+    print("  • Agregar evento [fecha] [descripción]")
+    print("  • Ver pendientes")
+    print("  • Programar recordatorio [tiempo] [mensaje]")
+    print("  • Leer correos / Contar correos nuevos")
+    print("  • Abrir WhatsApp")
     print("  • O pregunta cualquier cosa a la IA")
     print("\n(Escribe 'salir' para terminar)\n")
     print("="*60 + "\n")
     
-    logging.info(f"SISTEMA INICIADO EN MODO {mode_name}")
+    logger.info(f"SISTEMA INICIADO EN MODO {mode_name}")
     voz.hablar("Sistemas online. Escribe tu orden.")
 
     while True:
         try:
-            # Usar la función de entrada provista (input() o oido.escuchar())
-            texto = get_input_fn() 
-        except KeyboardInterrupt:
-            print("\n\n⚠️ Apagado forzado.")
-            logging.info("Sistema detenido por usuario (Ctrl+C)")
-            break 
+            texto = get_input_fn()
+            
+            if not texto:
+                continue
+            
+            if texto.lower() in ['salir', 'exit', 'apagar', 'cerrar']:
+                voz.hablar("Hasta pronto, jefe.")
+                logger.info("Sistema detenido normalmente")
+                break
+            
+            logger.info(f"Input Usuario: {texto}")
 
-        if not texto: 
-            continue
-        
-        if texto == "salir":
-            voz.hablar("Hasta pronto, jefe.")
-            logging.info("Sistema detenido normalmente")
-            break
-        
-        logging.info(f"Input Usuario: {texto}")
-
-        try:
             if ejecutar_accion(texto):
-                logging.info("Acción ejecutada con éxito.")
+                logger.info("Acción ejecutada con éxito.")
                 continue
             
             print("\n🧠 Procesando con Llama 3.2...")
             respuesta = cerebro.pensar(texto)
             
-            logging.info(f"Respuesta IA: {respuesta[:100]}...")
+            logger.info(f"Respuesta IA: {respuesta[:100]}...")
             print(f"\n🤖 JARVIS: {respuesta}\n")
             voz.hablar(respuesta)
 
+        except KeyboardInterrupt:
+            print("\n\n⚠️ Apagado forzado (Ctrl+C)")
+            voz.hablar("Apagado de emergencia.")
+            logger.info("Sistema detenido por usuario (Ctrl+C)")
+            break
+            
         except Exception as e:
-            logging.error(f"Error crítico en ciclo main: {e}")
+            logger.error(f"Error crítico en ciclo main: {e}", exc_info=True)
             print(f"\n❌ Ocurrió un error: {e}\n")
             voz.hablar("Hubo un error procesando tu comando")
 
-# --- PUNTO DE ENTRADA PRINCIPAL (VOZ/MIC) ---
+# --- PUNTO DE ENTRADA PRINCIPAL ---
 if __name__ == "__main__":
-    # Importar core.oido aquí para evitar el loop del wake word en el modo texto
-    from core import oido
-    
-    # En el modo voz, la entrada es el micrófono y la salida es el TTS real.
-    run_jarvis_session(get_input_fn=oido.escuchar, mode_name="VOZ/MIC")
+    try:
+        run_jarvis_session(oido.escuchar, "VOZ/MIC")
+    except KeyboardInterrupt:
+        print("\n⚠️ Programa terminado por usuario")
+    except Exception as e:
+        logger.error(f"Error fatal: {e}", exc_info=True)
+        print(f"\n❌ Error fatal: {e}")
+    finally:
+        print("\n🔌 Jarvis AI - Desconectado")
+        logger.info("Sistema completamente apagado")
+        # La función cerrar_sistema() se llama automáticamente por atexit
