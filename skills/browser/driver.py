@@ -4,8 +4,16 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-from . import voz
 from dotenv import load_dotenv 
+
+# ❌ INCORRECTO: from . import voz
+# ✅ CORRECTO:
+try:
+    from core import voz
+except ImportError:
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+    from core import voz
 
 load_dotenv()
 

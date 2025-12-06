@@ -1,16 +1,17 @@
 import chromadb
 import os
 
-# Guardamos la base de datos en una carpeta local llamada "cerebro_vectorial"
-ruta_db = os.path.join(os.getcwd(), "cerebro_vectorial")
-client = chromadb.PersistentClient(path=ruta_db)
+# ✅ CAMBIAR: Usar carpeta 'data' en lugar de raíz
+ruta_db = os.path.join(os.getcwd(), "data", "cerebro_vectorial")
 
-# Creamos la colección (como una tabla de SQL)
+# Crear carpeta si no existe
+os.makedirs(ruta_db, exist_ok=True)
+
+client = chromadb.PersistentClient(path=ruta_db)
 collection = client.get_or_create_collection(name="recuerdos_jarvis")
 
 def guardar(texto):
     """Guarda un nuevo recuerdo en la base de datos vectorial."""
-    # Usamos el total de documentos para generar un ID simple
     count = collection.count()
     nuevo_id = str(count + 1)
     
@@ -23,7 +24,7 @@ def guardar(texto):
 def buscar(pregunta, n_resultados=2):
     """Busca recuerdos relacionados semánticamente."""
     if collection.count() == 0:
-        return "" # No hay recuerdos aún
+        return ""
     
     try:
         results = collection.query(
@@ -31,7 +32,6 @@ def buscar(pregunta, n_resultados=2):
             n_results=n_resultados
         )
         
-        # Chroma devuelve una lista de listas, la aplanamos
         recuerdos = results['documents'][0]
         
         if not recuerdos:

@@ -1,17 +1,17 @@
 import imaplib
 import email
 import os
+import sys
 from dotenv import load_dotenv
 from email.header import decode_header
 
-# Importar voz desde el módulo principal
+# ❌ INCORRECTO: from modulos import voz
+# ✅ CORRECTO:
 try:
-    from modulos import voz
+    from core import voz
 except ImportError:
-    # Fallback si se ejecuta desde otro contexto
-    import sys
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-    from modulos import voz
+    from core import voz
 
 load_dotenv()
 
@@ -23,19 +23,14 @@ def leer_correos_gmail():
     try:
         voz.hablar("Conectando con los servidores de Google...")
         
-        # Verificar credenciales
         if not EMAIL_USUARIO or not EMAIL_PASS:
             voz.hablar("No se encontraron las credenciales de email en el archivo .env")
             return "Error: Credenciales no configuradas"
         
-        # Conexión SSL al servidor IMAP de Gmail
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(EMAIL_USUARIO, EMAIL_PASS)
-        
-        # Seleccionamos la bandeja de entrada
         mail.select("inbox")
         
-        # Buscamos correos NO LEÍDOS (UNSEEN)
         status, messages = mail.search(None, "UNSEEN")
         ids_correos = messages[0].split()
         
@@ -48,7 +43,6 @@ def leer_correos_gmail():
 
         correos_leidos = []
         
-        # Leemos los últimos 3 (de atrás para adelante)
         for i in range(cantidad - 1, max(cantidad - 4, -1), -1):
             res, msg = mail.fetch(ids_correos[i], "(RFC822)")
             
@@ -56,12 +50,10 @@ def leer_correos_gmail():
                 if isinstance(response, tuple):
                     msg_obj = email.message_from_bytes(response[1])
                     
-                    # Decodificar el Asunto
                     subject, encoding = decode_header(msg_obj["Subject"])[0]
                     if isinstance(subject, bytes):
                         subject = subject.decode(encoding if encoding else "utf-8")
                     
-                    # Decodificar el Remitente
                     frm, encoding = decode_header(msg_obj["From"])[0]
                     if isinstance(frm, bytes):
                         frm = frm.decode(encoding if encoding else "utf-8")

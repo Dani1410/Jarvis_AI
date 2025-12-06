@@ -2,27 +2,25 @@ import datetime
 import time
 import threading
 import dateparser
+import sys
+import os
 from .utils import cargar_datos, guardar_datos
 
-# Importar voz de forma relativa al proyecto principal
+# ❌ INCORRECTO: from modulos import voz
+# ✅ CORRECTO:
 try:
-    from modulos import voz
+    from core import voz
 except ImportError:
-    # Fallback si se ejecuta desde otro contexto
-    import sys
-    import os
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-    from modulos import voz
+    from core import voz
 
 def agregar_evento(descripcion, fecha_texto):
     """Agrega un evento a la agenda con interpretación de fecha natural."""
-    # Parsear fecha en español
     dt = dateparser.parse(fecha_texto, languages=['es'], settings={'PREFER_DATES_FROM': 'future'})
     
     if not dt:
         return "No entendí la fecha del evento. Intenta ser más claro."
     
-    # Si la fecha ya pasó, asumimos que es para la próxima semana
     if dt < datetime.datetime.now():
         dt = dt + datetime.timedelta(days=7)
 
@@ -46,8 +44,6 @@ def ver_eventos():
         return "No tienes eventos programados."
     
     respuesta = "Próximos eventos:\n"
-    
-    # Ordenar por fecha
     eventos_ordenados = sorted(data["eventos"], key=lambda x: x["fecha"])
     
     for i, evento in enumerate(eventos_ordenados[:5], 1):
@@ -60,7 +56,6 @@ def ver_pendientes():
     data = cargar_datos()
     respuesta = ""
     
-    # Tareas
     if data["tareas"]:
         tareas_pendientes = [t for t in data["tareas"] if t["estado"] == "pendiente"]
         respuesta += f"Tienes {len(tareas_pendientes)} tareas pendientes.\n"
@@ -69,7 +64,6 @@ def ver_pendientes():
     else:
         respuesta += "No tienes tareas pendientes.\n"
 
-    # Eventos
     if data["eventos"]:
         respuesta += "\nPróximos eventos:\n"
         for e in data["eventos"][-3:]:
@@ -82,7 +76,6 @@ def ver_pendientes():
         
     return respuesta
 
-# --- SISTEMA DE RECORDATORIOS ---
 def _proceso_recordatorio(mensaje, segundos, recurrente):
     """Hilo que ejecuta el recordatorio en segundo plano."""
     while True:
@@ -98,25 +91,21 @@ def programar_recordatorio(mensaje, tiempo_str):
     segundos = 0
     recurrente = False
     
-    # 1. Detectar recurrencia ("cada hora", "cada 30 minutos")
     if "cada" in tiempo_str.lower():
         recurrente = True
         
         if "hora" in tiempo_str:
             segundos = 3600
         elif "minuto" in tiempo_str:
-            # Extraer número si existe
             palabras = tiempo_str.split()
             for palabra in palabras:
                 if palabra.isdigit():
                     segundos = int(palabra) * 60
                     break
             if segundos == 0:
-                segundos = 60  # 1 minuto por defecto
+                segundos = 60
         elif "segundo" in tiempo_str:
             segundos = 1
-    
-    # 2. Detectar tiempo puntual ("en 20 minutos", "mañana a las 3")
     else:
         dt = dateparser.parse(tiempo_str, languages=['es'], settings={'PREFER_DATES_FROM': 'future'})
         if dt:
@@ -124,7 +113,6 @@ def programar_recordatorio(mensaje, tiempo_str):
             segundos = (dt - ahora).total_seconds()
     
     if segundos > 0:
-        # Lanzar hilo demonio
         t = threading.Thread(
             target=_proceso_recordatorio, 
             args=(mensaje, segundos, recurrente),

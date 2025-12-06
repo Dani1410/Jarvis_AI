@@ -2,8 +2,9 @@ import logging
 import os
 from dotenv import load_dotenv
 
-# Importaciones de módulos core
-from modulos import voz, cerebro
+# ❌ INCORRECTO: from modulos import voz, cerebro
+# ✅ CORRECTO: Importar desde core
+from core import voz, cerebro
 
 # Importaciones de skills organizadas
 from skills.productividad import (
@@ -14,10 +15,13 @@ from skills.productividad import (
     programar_recordatorio
 )
 from skills.social import leer_correos_gmail, contar_correos_nuevos
-from modulos.whatsapp import gestionar_whatsapp
-from modulos.web_scraper import leer_pagina, descargar_archivo
+from skills.browser import (
+    gestionar_whatsapp, 
+    leer_pagina, 
+    descargar_archivo
+)
 
-# from modulos import oido # Mantén esto comentado mientras uses solo texto
+# from core import oido  # Mantén esto comentado mientras uses solo texto
 
 # 1. Cargar secretos (.env) al inicio
 load_dotenv()
@@ -41,7 +45,6 @@ def ejecutar_accion(texto):
     
     # === PRODUCTIVIDAD ===
     if "agregar tarea" in texto or "nueva tarea" in texto:
-        # Extraer descripción después del comando
         if "agregar tarea" in texto:
             descripcion = texto.split("agregar tarea", 1)[1].strip()
         else:
@@ -62,14 +65,12 @@ def ejecutar_accion(texto):
         return True
     
     if "agregar evento" in texto or "nuevo evento" in texto:
-        # Ejemplo: "agregar evento reunión mañana a las 3"
         partes = texto.split("evento", 1)[1].strip().split(" en ", 1)
         
         if len(partes) == 2:
             descripcion, fecha = partes
             resultado = agregar_evento(descripcion.strip(), fecha.strip())
         else:
-            # Si no tiene " en ", intentar interpretar todo
             descripcion = input("¿Qué evento? ")
             fecha = input("¿Cuándo? (ej: mañana a las 3, el viernes) ")
             resultado = agregar_evento(descripcion, fecha)
@@ -85,7 +86,6 @@ def ejecutar_accion(texto):
         return True
     
     if "recordatorio" in texto:
-        # Ejemplo: "recordatorio tomar agua cada 30 minutos"
         partes = texto.split("recordatorio", 1)[1].strip()
         
         if " cada " in partes or " en " in partes:
@@ -140,7 +140,6 @@ def ejecutar_accion(texto):
         print(f"💾 {resultado}")
         return True
     
-    # No se ejecutó ninguna acción
     return False
 
 def main():
@@ -164,7 +163,6 @@ def main():
 
     while True:
         try:
-            # 1. ENTRADA: Usamos input() en lugar de micrófono
             texto = input("\n👉 TÚ: ").strip().lower()
         except KeyboardInterrupt:
             print("\n\n⚠️ Apagado forzado.")
@@ -179,16 +177,13 @@ def main():
             logging.info("Sistema detenido normalmente")
             break
         
-        # Guardamos en el log lo que escribiste
         logging.info(f"Input Usuario: {texto}")
 
         try:
-            # 2. ACCIONES: Probamos si ejecuta comandos
             if ejecutar_accion(texto):
                 logging.info("Acción ejecutada con éxito.")
                 continue
             
-            # 3. PENSAMIENTO: Si no es comando, preguntamos a Ollama
             print("\n🧠 Procesando con Llama 3.2...")
             respuesta = cerebro.pensar(texto)
             

@@ -1,7 +1,15 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from . import voz
+
+# ❌ INCORRECTO: from . import voz
+# ✅ CORRECTO:
+try:
+    from core import voz
+except ImportError:
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+    from core import voz
 
 def leer_pagina(url):
     """Extrae contenido inteligente de una página web."""
@@ -11,17 +19,13 @@ def leer_pagina(url):
         respuesta = requests.get(url, headers=headers)
         
         soup = BeautifulSoup(respuesta.text, 'html.parser')
-        
         texto_acumulado = ""
 
-        # 1. Extraer Título Principal (H1)
         titulo = soup.find('h1')
         if titulo:
             texto_acumulado += f"TITULO: {titulo.text.strip()}\n"
 
-        # 2. Extraer Subtítulos y Texto (H2 y P)
         bloques = soup.find_all(['h2', 'p'])
-        
         for bloque in bloques:
             texto = bloque.text.strip()
             if bloque.name == 'h2':
@@ -42,7 +46,6 @@ def descargar_archivo(url, nombre_salida):
         if response.status_code == 200:
             ruta_carpeta = os.path.join(os.getcwd(), "Descargas_Jarvis")
             os.makedirs(ruta_carpeta, exist_ok=True)
-            
             ruta_final = os.path.join(ruta_carpeta, nombre_salida)
             
             with open(ruta_final, 'wb') as f:

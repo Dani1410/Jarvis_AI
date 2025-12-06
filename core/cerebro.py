@@ -1,9 +1,14 @@
 import ollama
-from . import memoria_vectorial as memoria
+# ❌ ANTES: from . import memoria_vectorial as memoria
+# ✅ CORRECTO:
+try:
+    from . import memoria_vectorial as memoria
+except ImportError:
+    # Fallback si se ejecuta directamente
+    import memoria_vectorial as memoria
 
 MODELO = "llama3.2"
 
-# Aquí guardaremos la conversación activa
 historial_chat = []
 
 def pensar(pregunta, reiniciar=False):
@@ -26,16 +31,13 @@ def pensar(pregunta, reiniciar=False):
         sistema += f"\nCONTEXTO EXTRA DE MEMORIA: {recuerdos}"
 
     # 3. Construimos la estructura de mensajes para Ollama
-    # Si el historial está vacío, iniciamos con el sistema
     if not historial_chat:
         historial_chat.append({'role': 'system', 'content': sistema})
     
-    # Añadimos la pregunta actual del usuario
     historial_chat.append({'role': 'user', 'content': pregunta})
 
-    # Ojo: Para no saturar la RAM, mantenemos solo los últimos 10 mensajes
+    # Mantener solo últimos 10 mensajes
     if len(historial_chat) > 10:
-        # Mantenemos el sistema (índice 0) y los últimos 9
         historial_chat = [historial_chat[0]] + historial_chat[-9:]
 
     print("--> Pensando con contexto...") 
@@ -43,7 +45,6 @@ def pensar(pregunta, reiniciar=False):
         response = ollama.chat(model=MODELO, messages=historial_chat)
         respuesta_texto = response['message']['content']
         
-        # Añadimos la respuesta de Jarvis al historial para que se acuerde después
         historial_chat.append({'role': 'assistant', 'content': respuesta_texto})
         
         return respuesta_texto
