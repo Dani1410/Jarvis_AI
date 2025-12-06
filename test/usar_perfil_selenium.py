@@ -49,12 +49,36 @@ def get_first_chat_name(driver, timeout=10):
     aria = first.get_attribute("aria-label") or ""
     if aria:
         return aria.split(",")[0].strip()
-    # Fallback: intentar por título visible
     try:
         title = first.find_element(By.CSS_SELECTOR, "span[title]")
         return title.get_attribute("title") or title.text
     except Exception:
         return None
+
+def get_first_unread_chat_name(driver, timeout=10):
+    wait = WebDriverWait(driver, timeout)
+    grid = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div[role='grid']")))
+    rows = grid.find_elements(By.CSS_SELECTOR, "div[role='row']")
+    for row in rows:
+        badge = row.find_elements(
+            By.CSS_SELECTOR,
+            (
+                "span[data-testid='icon-unread-count'], span[data-testid='unread-count'], "
+                "div[aria-label*='mensaje sin leer'], div[aria-label*='mensajes sin leer'], "
+                "span[aria-label*='mensaje sin leer'], span[aria-label*='mensajes sin leer']"
+            ),
+        )
+        if not badge:
+            continue
+        aria = row.get_attribute("aria-label") or ""
+        if aria:
+            return aria.split(",")[0].strip()
+        try:
+            title = row.find_element(By.CSS_SELECTOR, "span[title]")
+            return title.get_attribute("title") or title.text
+        except Exception:
+            continue
+    return None
 
 def main():
     try:
@@ -65,11 +89,15 @@ def main():
         print("WhatsApp Web abierto. Esperando 8s a que cargue la sesión...")
         time.sleep(8)
 
-        name = get_first_chat_name(driver)
-        if name:
-            print("Primer chat (más reciente):", name)
+        unread = get_first_unread_chat_name(driver)
+        if unread:
+            print("Primer chat con no leídos:", unread)
         else:
-            print("No se pudo obtener el nombre del primer chat.")
+            print("No hay chats con mensajes sin leer.")
+
+        first = get_first_chat_name(driver)
+        if first:
+            print("Primer chat (más reciente):", first)
         time.sleep(5)
     except Exception as e:
         print("Ocurrió un error al lanzar Chrome:", e, file=sys.stderr)
