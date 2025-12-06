@@ -40,3 +40,81 @@
 2025-12-06 02:04:51 - INFO - Input Usuario: exit
 2025-12-06 02:04:54 - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
 2025-12-06 02:04:54 - INFO - Respuesta IA: ¡Hasta luego!...
+2025-12-06 02:16:59 - INFO - SISTEMA INICIADO EN MODO TEXTO
+2025-12-06 02:17:16 - INFO - Input Usuario: jarvis, tuitea hola
+2025-12-06 02:17:16 - INFO - ====== WebDriver manager ======
+2025-12-06 02:17:18 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 02:17:19 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 02:17:20 - INFO - There is no [win64] chromedriver "143.0.7499.40" for browser google-chrome "143.0.7499" in cache
+2025-12-06 02:17:20 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 02:17:21 - INFO - WebDriver version 143.0.7499.40 selected
+2025-12-06 02:17:21 - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/143.0.7499.40/win32/chromedriver-win32.zip
+2025-12-06 02:17:21 - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/143.0.7499.40/win32/chromedriver-win32.zip
+2025-12-06 02:17:22 - INFO - Driver downloading response is 200
+2025-12-06 02:17:25 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 02:17:25 - INFO - Driver has been saved in cache [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40]
+2025-12-06 02:18:32 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:24:54 - INFO - SISTEMA INICIADO EN MODO TEXTO
+2025-12-06 03:25:02 - INFO - Input Usuario: jarvis, abre whatsap
+2025-12-06 03:25:02 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:25:13 - INFO - Input Usuario: jarvis, abre whatsapp
+2025-12-06 03:25:13 - INFO - ====== WebDriver manager ======
+2025-12-06 03:25:17 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:25:17 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:25:18 - INFO - Driver [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40\chromedriver-win32/chromedriver.exe] found in cache
+2025-12-06 03:25:31 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:28:54 - INFO - SISTEMA INICIADO EN MODO TEXTO
+2025-12-06 03:29:01 - INFO - Input Usuario: jarvis, lee mis mensajes
+2025-12-06 03:29:01 - INFO - ====== WebDriver manager ======
+2025-12-06 03:29:05 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:29:06 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:29:07 - INFO - Driver [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40\chromedriver-win32/chromedriver.exe] found in cache
+2025-12-06 03:29:39 - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-06 03:29:39 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:30:41 - INFO - Input Usuario: jarvis, lee mis mensajes
+2025-12-06 03:30:41 - INFO - ====== WebDriver manager ======
+2025-12-06 03:30:44 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:30:47 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:30:48 - INFO - Driver [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40\chromedriver-win32/chromedriver.exe] found in cache
+2025-12-06 03:31:01 - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-06 03:31:01 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:31:04 - INFO - Input Usuario: jarvis, lee mis mensajes
+2025-12-06 03:31:04 - INFO - ====== WebDriver manager ======
+2025-12-06 03:31:08 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:31:09 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:31:10 - INFO - Driver [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40\chromedriver-win32/chromedriver.exe] found in cache
+2025-12-06 03:31:31 - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-06 03:31:31 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:34:16 - INFO - SISTEMA INICIADO EN MODO TEXTO
+2025-12-06 03:34:32 - INFO - Input Usuario: jarvis, lee mis mensajes
+2025-12-06 03:34:32 - INFO - ====== WebDriver manager ======
+2025-12-06 03:34:35 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:34:36 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:34:37 - INFO - Driver [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40\chromedriver-win32/chromedriver.exe] found in cache
+2025-12-06 03:34:55 - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-06 03:34:55 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:37:24 - INFO - SISTEMA INICIADO EN MODO TEXTO
+2025-12-06 03:37:42 - INFO - Input Usuario: jarvis, lee mis mensajes
+2025-12-06 03:37:42 - INFO - ====== WebDriver manager ======
+2025-12-06 03:37:46 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:37:47 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:37:47 - INFO - Driver [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40\chromedriver-win32/chromedriver.exe] found in cache
+2025-12-06 03:38:09 - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-06 03:38:09 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:42:13 - INFO - SISTEMA INICIADO EN MODO TEXTO
+2025-12-06 03:42:24 - INFO - Input Usuario: jarvis, lee mis mensajes
+2025-12-06 03:42:24 - INFO - ====== WebDriver manager ======
+2025-12-06 03:42:27 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:42:28 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:42:29 - INFO - Driver [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40\chromedriver-win32/chromedriver.exe] found in cache
+2025-12-06 03:42:47 - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-06 03:42:47 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:44:17 - INFO - SISTEMA INICIADO EN MODO TEXTO
+2025-12-06 03:44:21 - INFO - Input Usuario: jarvis, lee mis mensajes
+2025-12-06 03:44:21 - INFO - ====== WebDriver manager ======
+2025-12-06 03:44:24 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:44:25 - INFO - Get LATEST chromedriver version for google-chrome
+2025-12-06 03:44:26 - INFO - Driver [C:\Users\axel0\.wdm\drivers\chromedriver\win64\143.0.7499.40\chromedriver-win32/chromedriver.exe] found in cache
+2025-12-06 03:44:46 - INFO - HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2025-12-06 03:44:46 - INFO - Acción ejecutada con éxito.
+2025-12-06 03:49:22 - INFO - Input Usuario: salirsalirprofile_dir

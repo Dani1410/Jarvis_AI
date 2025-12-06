@@ -1,63 +1,72 @@
 import os
 import time
+from pathlib import Path
 import requests
-import psutil
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
-from dotenv import load_dotenv
 from . import voz
+from dotenv import load_dotenv 
 
-# Cargar variables de entorno
 load_dotenv()
-RUTA_PERFIL = os.getenv('CHROME_PROFILE_PATH')
 
-def chrome_esta_abierto():
-    """Verifica si hay procesos de Chrome corriendo que bloqueen el perfil."""
-    for proc in psutil.process_iter(['name']):
-        try:
-            if 'chrome' in proc.info['name'].lower():
-                return True
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-    return False
+CHROME_PROFILE_SELENIUM_PATH = os.getenv('CHROME_PROFILE_SELENIUM_PATH')
+RUTA_PERFIL = os.getenv('CHROME_PROFILE_SELENIUM_PATH')
+
+# --- CONFIGURACIÓN DE PERFIL DEDICADO ---
+# Usamos la carpeta que tú definiste para que no choque con tu Chrome normal
+PROFILE_DIR = Path(CHROME_PROFILE_SELENIUM_PATH)
+
+def ensure_profile_dir():
+    """Asegura que la carpeta del perfil exista"""
+    if not PROFILE_DIR.exists():
+        PROFILE_DIR.mkdir(parents=True, exist_ok=True)
 
 def iniciar_driver():
-    """Inicia Chrome de forma segura y robusta."""
+    """Inicia el Chrome de Jarvis (independiente del tuyo)."""
+    ensure_profile_dir()
     
-    # 1. Si detectamos Chrome abierto, intentamos cerrarlo nosotros mismos (Opcional)
-    # Si prefieres que te avise, deja el aviso. Si prefieres que sea agresivo:
-    if chrome_esta_abierto():
-        voz.hablar("Cerrando procesos de Chrome para liberar tu perfil...")
-        os.system("taskkill /F /IM chrome.exe /T") # /T mata el árbol de procesos
-        time.sleep(2) # Damos tiempo a que muera
-
     opciones = Options()
-    if RUTA_PERFIL:
-        opciones.add_argument(f"user-data-dir={RUTA_PERFIL}")
-        # Asegúrate que este sea el nombre correcto que viste en chrome://version
-        opciones.add_argument("--profile-directory=Profile 1") 
+    # Usamos el perfil dedicado en C:\temp...
+    opciones.add_argument(f"user-data-dir={PROFILE_DIR}")
     
-    # --- LA SOLUCIÓN AL ERROR DevToolsActivePort ---
-    opciones.add_argument("--remote-debugging-port=9222") # Fuerza el puerto
-    opciones.add_argument("--no-sandbox") # Vital para algunos sistemas
-    opciones.add_argument("--disable-dev-shm-usage") # Evita problemas de memoria compartida
-    # -----------------------------------------------
-
+    # Optimizaciones para estabilidad
+    opciones.add_argument("--no-first-run")
+    opciones.add_argument("--no-default-browser-check")
+    opciones.add_argument("--disable-extensions")
     opciones.add_experimental_option("detach", True) 
     opciones.add_experimental_option("excludeSwitches", ["enable-automation"])
     
     try:
-        voz.hablar("Abriendo navegador...")
+        # Ya no hace falta voz.hablar aquí para no ser repetitivo, 
+        # a menos que falle.
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opciones)
         return driver
     except Exception as e:
-        voz.hablar("Falló el inicio de Chrome.")
-        print(f"Error Crítico Selenium: {e}")
+        voz.hablar("Error crítico al iniciar el navegador de Jarvis.")
+        print(f"Error Selenium: {e}")
         return None
+
+# --- FUNCIONES DE WHATSAPP ---
+def abrir_whatsapp_web():
+    driver = iniciar_driver()
+    if not driver: return
+
+    try:
+        voz.hablar("Abriendo WhatsApp Web en perfil dedicado...")
+        driver.get("https://web.whatsapp.com/")
+        
+        # Esperamos un poco para verificar si pide QR o si ya entró
+        voz.hablar("Cargando... Si es la primera vez, escanea el código QR ahora.")
+        time.sleep(10) 
+        
+        return "WhatsApp abierto exitosamente."
+    except Exception as e:
+        return f"Error abriendo WhatsApp: {e}"
 
 # --- SCRAPING INTELIGENTE (MEJORADO) ---
 def leer_pagina(url):
@@ -112,22 +121,65 @@ def descargar_archivo(url, nombre_salida):
     except Exception as e:
         return f"Error en descarga: {e}"
 
-# --- 3. REDES SOCIALES (Twitter/X) ---
-def publicar_twitter(mensaje):
+def leer_mensajes_whatsapp():
     driver = iniciar_driver()
-    if not driver: return
+    if not driver: return "Error de navegador."
 
     try:
-        voz.hablar("Entrando a X...")
-        driver.get("https://twitter.com/compose/tweet")
-        time.sleep(6) # Esperamos a que cargue
+        voz.hablar("Buscando mensajes nuevos...")
+        driver.get("https://web.whatsapp.com/")
+        time.sleep(10) # Espera importante para que cargue la lista
         
-        # Escribe en el elemento activo (la caja de tweet)
-        elemento_activo = driver.switch_to.active_element
-        elemento_activo.send_keys(mensaje)
+        # --- PASO 1: ENCONTRAR CHAT NO LEÍDO EN LA BARRA LATERAL ---
+        try:
+            # Buscamos en el HTML que me pasaste el aria-label="X mensajes no leídos"
+            chat_nuevo = driver.find_element(By.XPATH, '//span[contains(@aria-label, "no leído")]')
+            
+            # Dibujamos borde rojo para que veas cuál encontró (Depuración)
+            driver.execute_script("arguments[0].style.border='3px solid red'", chat_nuevo)
+            
+            voz.hablar("Encontré mensajes nuevos. Abriendo chat...")
+            chat_nuevo.click() # Damos clic para entrar a la conversación
+            time.sleep(3) # Esperamos a que carguen los mensajes de la derecha
+            
+        except:
+            voz.hablar("No veo chats nuevos. Leeré la conversación que tengas abierta.")
+
+        # --- PASO 2: LEER LOS MENSAJES DE LA DERECHA (EL CHAT REAL) ---
+        print("[DEBUG] Analizando conversación...")
         
-        voz.hablar("Tweet escrito. Presiona Control + Enter para enviarlo.")
-        
+        try:
+            # Buscamos burbujas de mensaje. 
+            # La clase 'message-in' son los mensajes RECIBIDOS (blancos).
+            # La clase 'message-out' son los tuyos (verdes).
+            # Queremos leer el último recibido.
+            
+            # Buscamos todos los contenedores de mensajes recibidos
+            mensajes_recibidos = driver.find_elements(By.XPATH, '//div[contains(@class, "message-in")]')
+            
+            if not mensajes_recibidos:
+                # Si no hay 'message-in', quizás el último mensaje es tuyo o es un sticker
+                return "El chat está vacío o el último mensaje lo enviaste tú."
+
+            # Tomamos el último mensaje de la lista (el más reciente)
+            ultimo_bloque = mensajes_recibidos[-1]
+            
+            # Dentro del bloque, buscamos el texto copiable (selectable-text)
+            try:
+                elemento_texto = ultimo_bloque.find_element(By.CSS_SELECTOR, "span.selectable-text")
+                texto_mensaje = elemento_texto.text
+                
+                # Coloreamos amarillo para que veas qué leyó
+                driver.execute_script("arguments[0].style.backgroundColor='yellow'", elemento_texto)
+                
+                return f"El mensaje dice: {texto_mensaje}"
+            except:
+                return "El último mensaje parece ser una foto, sticker o audio."
+
+        except Exception as e:
+            print(f"Error extrayendo texto: {e}")
+            return "No pude leer el texto del chat abierto."
+
     except Exception as e:
-        print(e)
-        voz.hablar("Hubo un problema con la interfaz de Twitter.")
+        print(f"Error general WA: {e}")
+        return "Hubo un error técnico."

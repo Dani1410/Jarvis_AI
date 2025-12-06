@@ -40,10 +40,21 @@ def ejecutar(texto):
         except Exception as e:
             voz.hablar("Error leyendo el portapapeles.")
         return True
+    
+    # --- COMUNICACIÓN AVANZADA ---
+    if "abre whatsapp" in texto or "inicia whatsapp" in texto:
+        voz.hablar("Iniciando protocolo de mensajería.")
+        navegacion.abrir_whatsapp_web()
+        return True
+    
+    # ... dentro de def ejecutar(texto): ...
 
-    if "publica en twitter" in texto or "tuitea" in texto:
-        tweet = texto.replace("publica en twitter", "").replace("tuitea", "").strip()
-        navegacion.publicar_twitter(tweet)
+    if "lee mis mensajes" in texto or "qué me dijeron" in texto:
+        respuesta = navegacion.leer_mensajes_whatsapp()
+        voz.hablar(respuesta)
+        # Opcional: Pedirle a Cerebro (Ollama) que te de una respuesta sugerida
+        sugerencia = cerebro.pensar(f"Alguien me escribió esto en WhatsApp: '{respuesta}'. ¿Qué le puedo responder de forma breve y casual?")
+        voz.hablar(f"Sugerencia de respuesta: {sugerencia}")
         return True
 
     if "descarga esto" in texto:
@@ -148,34 +159,6 @@ def ejecutar(texto):
     # --- COMUNICACIÓN ---
     if "lee mis correos" in texto or "tengo mensajes" in texto or "revisar email" in texto:
         social.leer_correos_gmail()
-        return True
-
-    # --- WHATSAPP ---
-    if "mensaje de whatsapp" in texto or "envía un whatsapp" in texto:
-        try:
-            orden = texto.replace("envía un mensaje de whatsapp a", "").replace("envía un whatsapp a", "").strip()
-            
-            if "que diga" in orden:
-                partes = orden.split("que diga")
-                nombre_destino = partes[0].strip()
-                mensaje = partes[1].strip()
-            else:
-                voz.hablar("¿A quién se lo envío?")
-                return True # Asumimos error por simplicidad
-
-            numero = CONTACTOS.get(nombre_destino.lower())
-
-            if numero:
-                voz.hablar(f"Enviando mensaje a {nombre_destino}: {mensaje}")
-                pywhatkit.sendwhatmsg_instantly(numero, mensaje, wait_time=15, tab_close=True)
-                voz.hablar("Mensaje enviado.")
-            else:
-                voz.hablar(f"No tengo el número de {nombre_destino} en mi agenda.")
-            
-        except Exception as e:
-            print(e)
-            voz.hablar("Hubo un error al intentar enviar el mensaje.")
-        
         return True
     
     # --- ORGANIZACIÓN Y TAREAS (AHORA SÍ ESTÁ AL NIVEL CORRECTO) ---

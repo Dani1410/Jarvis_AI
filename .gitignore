@@ -1,10 +1,71 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-cerebro_vectorial/
+*.py[cod]
+*$py.class
+
+# Virtual environments
 venv/
-.vscode/
-temp_audio.wav
-*.spec
+env/
+ENV/
+venv.bak/
+
+# Python packaging / build artifacts
 build/
 dist/
+*.egg-info/
+pip-wheel-metadata/
+*.whl
+
+# PyInstaller
+*.spec
+
+.config.py
+
+# Editor/IDE folders
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment / secret files
 .env
+.env.*
+secrets.json
+credentials.json
+
+# Logs
+logs/
+*.log
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Caches
+.cache/
+.mypy_cache/
+.hypothesis/
+
+# Temporary/media/test files
+temp_audio.wav
+captura_969.png
+
+# Chrome / browser profiles created for testing
+chrome_profile_copies/
+# En tu caso: C:\temp\selenium_profile (si lo usas solo localmente) -> ignorar la carpeta donde guardes ese perfil
+# Ejemplo para una ruta local (sin incluir la raíz C:): temp_selenium_profile/
+# Ajusta al nombre que uses.
+
+# Misc
+*.log.*
