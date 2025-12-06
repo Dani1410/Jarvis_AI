@@ -2,11 +2,10 @@ import logging
 import os
 from dotenv import load_dotenv
 
-# ❌ INCORRECTO: from modulos import voz, cerebro
-# ✅ CORRECTO: Importar desde core
-from core import voz, cerebro
+# Importaciones de CORE
+from core import voz, cerebro, oido
 
-# Importaciones de skills organizadas
+# Importaciones de skills organizadas (Necesarias para ejecutar_accion)
 from skills.productividad import (
     agregar_tarea, 
     ver_tareas, 
@@ -21,12 +20,10 @@ from skills.browser import (
     descargar_archivo
 )
 
-# from core import oido  # Mantén esto comentado mientras uses solo texto
-
 # 1. Cargar secretos (.env) al inicio
 load_dotenv()
 
-# 2. Configuración de Logs (Historial de errores y acciones)
+# 2. Configuración de Logs
 if not os.path.exists("logs"):
     os.makedirs("logs")
 
@@ -38,9 +35,15 @@ logging.basicConfig(
     encoding='utf-8'
 )
 
+# -------------------------------------------------------------
+# FUNCIÓN DE LÓGICA PRINCIPAL (La unidad que será reutilizada)
+# -------------------------------------------------------------
+
+# La función ejecutar_accion se queda aquí ya que usa todas las skills
 def ejecutar_accion(texto):
     """
     Procesa comandos específicos y retorna True si ejecutó algo.
+    (El contenido es el mismo que tenías en el main.py original)
     """
     
     # === PRODUCTIVIDAD ===
@@ -93,7 +96,7 @@ def ejecutar_accion(texto):
                 mensaje, tiempo = partes.split(" cada ", 1)
                 tiempo = "cada " + tiempo
             else:
-                mensaje, tiempo = partes.split(" en ", 1)
+                mensaje, tiempo = partes.split(" en " in partes) and partes.split(" en ", 1)
                 tiempo = "en " + tiempo
             
             resultado = programar_recordatorio(mensaje.strip(), tiempo.strip())
@@ -142,28 +145,30 @@ def ejecutar_accion(texto):
     
     return False
 
-def main():
+# La función run_jarvis_session ejecuta el bucle principal, usando las funciones
+# de I/O que le pasemos.
+def run_jarvis_session(get_input_fn, mode_name):
+    
+    # La función voz.hablar ya es global y la usaremos para output,
+    # el modo texto la habrá redefinido.
+    
     print("\n" + "="*60)
     print("🤖 JARVIS AI - SISTEMA ACTIVADO")
     print("="*60)
-    print("📝 MODO DEBUG (TEXTO) ACTIVADO")
-    print("Comandos disponibles:")
+    print(f"📝 MODO {mode_name} ACTIVADO")
+    print("Comandos disponibles: (muestra solo el inicio del menú para no duplicar)")
     print("  • Agregar tarea [descripción]")
-    print("  • Ver tareas")
-    print("  • Agregar evento [descripción] en [fecha]")
-    print("  • Recordatorio [mensaje] cada/en [tiempo]")
-    print("  • Leer correos")
-    print("  • WhatsApp")
     print("  • O pregunta cualquier cosa a la IA")
     print("\n(Escribe 'salir' para terminar)\n")
     print("="*60 + "\n")
     
-    logging.info("SISTEMA INICIADO EN MODO TEXTO")
+    logging.info(f"SISTEMA INICIADO EN MODO {mode_name}")
     voz.hablar("Sistemas online. Escribe tu orden.")
 
     while True:
         try:
-            texto = input("\n👉 TÚ: ").strip().lower()
+            # Usar la función de entrada provista (input() o oido.escuchar())
+            texto = get_input_fn() 
         except KeyboardInterrupt:
             print("\n\n⚠️ Apagado forzado.")
             logging.info("Sistema detenido por usuario (Ctrl+C)")
@@ -196,5 +201,10 @@ def main():
             print(f"\n❌ Ocurrió un error: {e}\n")
             voz.hablar("Hubo un error procesando tu comando")
 
+# --- PUNTO DE ENTRADA PRINCIPAL (VOZ/MIC) ---
 if __name__ == "__main__":
-    main()
+    # Importar core.oido aquí para evitar el loop del wake word en el modo texto
+    from core import oido
+    
+    # En el modo voz, la entrada es el micrófono y la salida es el TTS real.
+    run_jarvis_session(get_input_fn=oido.escuchar, mode_name="VOZ/MIC")

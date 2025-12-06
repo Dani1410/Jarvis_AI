@@ -1,19 +1,15 @@
+"""
+Procesador de comandos centralizado.
+Responsabilidad: Enrutar comandos a los módulos especializados.
+"""
 import os
-import pyautogui
-import screen_brightness_control as sbc
-from AppOpener import open as app_open
+import pyperclip
 import pywhatkit
-import datetime
-import psutil 
-import random
-import pyperclip 
 
-# ✅ IMPORTACIONES CORREGIDAS
 try:
     from core import voz, cerebro
     from core import memoria_vectorial as memoria
 except ImportError:
-    # Fallback para ejecución directa
     import voz
     import cerebro
     import memoria_vectorial as memoria
@@ -22,12 +18,8 @@ from skills.social import email_handler
 from skills.productividad import agenda, tareas
 from skills.browser import scraper, whatsapp
 from skills.browser import driver as nav_driver
-
-# Configuración básica
-CONTACTOS = {
-    "dani": "+5243715364",
-    "keni": "+525611263777"
-}
+from skills.sistema import hardware, control, apps
+from skills.utilidades import tiempo
 
 def ejecutar(texto):
     """
@@ -73,6 +65,7 @@ def ejecutar(texto):
         if len(ext) > 4: 
             ext = "file"
         
+        import random
         nombre = f"descarga_jarvis_{random.randint(1000, 9999)}.{ext}"
         resp = scraper.descargar_archivo(url, nombre)
         voz.hablar(resp)
@@ -87,27 +80,27 @@ def ejecutar(texto):
 
     # --- SISTEMA (Hardware) ---
     if "batería" in texto:
-        bateria = psutil.sensors_battery()
-        if bateria:
-            voz.hablar(f"Batería al {bateria.percent} por ciento.")
+        info_bateria = hardware.obtener_bateria()
+        if info_bateria:
+            voz.hablar(f"Batería al {info_bateria['porcentaje']} por ciento.")
         else:
             voz.hablar("No puedo leer la batería.")
         return True
     
     if "cpu" in texto or "procesador" in texto:
-        uso = psutil.cpu_percent(interval=1)
+        uso = hardware.obtener_uso_cpu()
         voz.hablar(f"Uso del procesador: {uso} por ciento.")
         return True
 
     # --- FECHA Y HORA ---
     if "hora" in texto or "qué hora" in texto:
-        hora = datetime.datetime.now().strftime('%I:%M %p')
-        voz.hablar(f"Son las {hora}")
+        respuesta = tiempo.obtener_hora_actual()
+        voz.hablar(respuesta)
         return True
         
     if "fecha" in texto or "qué día" in texto:
-        fecha = datetime.datetime.now().strftime('%d de %B de %Y')
-        voz.hablar(f"Hoy es {fecha}")
+        respuesta = tiempo.obtener_fecha_actual()
+        voz.hablar(respuesta)
         return True
 
     # --- MULTIMEDIA ---
@@ -125,24 +118,19 @@ def ejecutar(texto):
 
     # --- CONTROL DE LAPTOP ---
     if "sube el volumen" in texto or "más volumen" in texto:
-        pyautogui.press("volumeup", presses=5)
+        respuesta = control.subir_volumen(5)
         voz.hablar("Subiendo volumen.")
         return True
         
     if "baja el volumen" in texto or "menos volumen" in texto:
-        pyautogui.press("volumedown", presses=5)
+        respuesta = control.bajar_volumen(5)
         voz.hablar("Bajando volumen.")
         return True
     
     if "captura" in texto or "screenshot" in texto:
         voz.hablar("Tomando captura.")
-        ruta_carpeta = os.path.join("data", "downloads")
-        os.makedirs(ruta_carpeta, exist_ok=True)
-        
-        ruta = os.path.join(ruta_carpeta, f"captura_{random.randint(1,1000)}.png")
-        pyautogui.screenshot(ruta)
-        
-        os.system(f"start {ruta}")
+        respuesta = control.tomar_captura()
+        print(respuesta)
         voz.hablar("Captura guardada.")
         return True
 
@@ -150,11 +138,8 @@ def ejecutar(texto):
     if "abre" in texto and "whatsapp" not in texto:
         app = texto.replace("abre", "").strip()
         voz.hablar(f"Abriendo {app}")
-        try: 
-            app_open(app, match_closest=True, throw_error=True)
-        except Exception as e: 
-            voz.hablar(f"No encontré {app}")
-            print(f"Error abriendo app: {e}")
+        respuesta = apps.abrir_aplicacion(app)
+        print(respuesta)
         return True
     
     # --- SOCIAL (Email) ---
@@ -177,7 +162,6 @@ def ejecutar(texto):
 
     if "evento" in texto and ("agregar" in texto or "nuevo" in texto):
         voz.hablar("¿Qué evento quieres agendar?")
-        # Aquí necesitarías implementar agenda.procesar_evento_voz()
         return True
 
     if "qué tengo" in texto or "pendientes" in texto or "agenda" in texto:
