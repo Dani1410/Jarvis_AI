@@ -1,27 +1,53 @@
 import os
 import time
 import requests
+import psutil
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
+from dotenv import load_dotenv
 from . import voz
 
-# --- CONFIGURACIÓN PARA TU USUARIO axel0 ---
-# Esta ruta apunta a tu perfil real de Chrome para no tener que loguearte cada vez
-RUTA_PERFIL_CHROME = r"C:\Users\axel0\AppData\Local\Google\Chrome\User Data"
+# Cargar variables de entorno
+load_dotenv()
+RUTA_PERFIL = os.getenv('CHROME_PROFILE_PATH')
+
+def chrome_esta_abierto():
+    """Verifica si hay procesos de Chrome corriendo que bloqueen el perfil."""
+    for proc in psutil.process_iter(['name']):
+        try:
+            if 'chrome' in proc.info['name'].lower():
+                return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    return False
 
 def iniciar_driver():
-    """Inicia Chrome con tu perfil real (cookies, sesiones abiertas)"""
+    """Inicia Chrome de forma segura y robusta."""
+    
+    # 1. Si detectamos Chrome abierto, intentamos cerrarlo nosotros mismos (Opcional)
+    # Si prefieres que te avise, deja el aviso. Si prefieres que sea agresivo:
+    if chrome_esta_abierto():
+        voz.hablar("Cerrando procesos de Chrome para liberar tu perfil...")
+        os.system("taskkill /F /IM chrome.exe /T") # /T mata el árbol de procesos
+        time.sleep(2) # Damos tiempo a que muera
+
     opciones = Options()
-    opciones.add_argument(f"user-data-dir={RUTA_PERFIL_CHROME}")
-    opciones.add_argument("--profile-directory=Default") # Usa el perfil principal
-    # Mantiene el navegador abierto aunque acabe el script
+    if RUTA_PERFIL:
+        opciones.add_argument(f"user-data-dir={RUTA_PERFIL}")
+        # Asegúrate que este sea el nombre correcto que viste en chrome://version
+        opciones.add_argument("--profile-directory=Profile 1") 
+    
+    # --- LA SOLUCIÓN AL ERROR DevToolsActivePort ---
+    opciones.add_argument("--remote-debugging-port=9222") # Fuerza el puerto
+    opciones.add_argument("--no-sandbox") # Vital para algunos sistemas
+    opciones.add_argument("--disable-dev-shm-usage") # Evita problemas de memoria compartida
+    # -----------------------------------------------
+
     opciones.add_experimental_option("detach", True) 
-    # Oculta mensajes molestos de automatización
     opciones.add_experimental_option("excludeSwitches", ["enable-automation"])
     
     try:
@@ -29,28 +55,42 @@ def iniciar_driver():
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opciones)
         return driver
     except Exception as e:
-        voz.hablar("Error. Cierra todas las ventanas de Chrome y vuelve a intentar.")
-        print(f"Error Selenium: {e}")
+        voz.hablar("Falló el inicio de Chrome.")
+        print(f"Error Crítico Selenium: {e}")
         return None
 
-# --- 1. LEER NOTICIAS ---
+# --- SCRAPING INTELIGENTE (MEJORADO) ---
 def leer_pagina(url):
     try:
-        voz.hablar("Analizando sitio web...")
-        # Headers para parecer un humano y no un robot
+        voz.hablar("Analizando contenido inteligente...")
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         respuesta = requests.get(url, headers=headers)
         
         soup = BeautifulSoup(respuesta.text, 'html.parser')
         
-        # Extraemos párrafos <p>
-        parrafos = soup.find_all('p')
-        texto_completo = " ".join([p.text for p in parrafos])
+        texto_acumulado = ""
+
+        # 1. Extraer Título Principal (H1)
+        titulo = soup.find('h1')
+        if titulo:
+            texto_acumulado += f"TITULO: {titulo.text.strip()}\n"
+
+        # 2. Extraer Subtítulos y Texto (H2 y P)
+        # Buscamos etiquetas h2 y p para dar estructura
+        bloques = soup.find_all(['h2', 'p'])
         
-        # Cortamos a 3000 caracteres para no saturar a Ollama
-        return texto_completo[:3000]
+        for bloque in bloques:
+            texto = bloque.text.strip()
+            if bloque.name == 'h2':
+                texto_acumulado += f"\nSUBTÍTULO: {texto}\n"
+            elif bloque.name == 'p' and len(texto) > 50: # Ignoramos párrafos basura muy cortos
+                texto_acumulado += f"{texto} "
+        
+        # Limpieza final y recorte
+        return texto_acumulado[:3500] # Un poco más de contexto para Llama 3.2
+        
     except Exception as e:
-        return f"No pude leer la página: {e}"
+        return f"Error de lectura: {e}"
 
 # --- 2. DESCARGAS ---
 def descargar_archivo(url, nombre_salida):
